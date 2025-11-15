@@ -420,8 +420,13 @@ It demonstrates strong skills in:
 
 
 
-frontend/screenshots/auth.png
-frontend/screenshots/dashboard.png
-frontend/screenshots/dbstorage.png
+### 🔐 Authentication Screen
+![Authentication](frontend/screenshots/auth.png)
+
+### 🖥️ Dashboard Overview
+![Dashboard](frontend/screenshots/dashboard.png)
+
+### 🗄️ Database Storage View
+![Database Storage](frontend/screenshots/dbstorage.png)
 
 
