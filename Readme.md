@@ -418,7 +418,6 @@ It demonstrates strong skills in:
 * User interface design
 * Debugging & problem-solving
 
-
 ## 📸 Screenshots
 
 ### 🔐 Authentication Page
@@ -429,5 +428,4 @@ It demonstrates strong skills in:
 
 ### 🗄️ MongoDB Storage
 ![DB Storage](frontend/screenshots/dbstorage.png)
-
 
