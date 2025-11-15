@@ -1,6 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Trash2, Edit, Plus, Search, Package, X, AlertCircle, LogOut, User, Mail, Lock, Eye, EyeOff, TrendingUp, CheckCircle } from 'lucide-react';
 
+// =====================================================
+// 🔗 GLOBAL API BASE URL (USE YOUR RENDER BACKEND)
+// =====================================================
+const API_BASE = "https://inventory-management-system-lers.onrender.com/api";
+
 // ============ AUTH CONTEXT ============
 
 const AuthContext = createContext();
@@ -20,7 +25,7 @@ const AuthProvider = ({ children }) => {
 
   const fetchUser = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/auth/me', {
+      const response = await fetch(`${API_BASE}/auth/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -72,7 +77,7 @@ const InventoryProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const { token } = useAuth();
 
-  const API_URL = 'http://localhost:5000/api';
+  const API_URL = API_BASE;
 
   const fetchItems = async (category = '') => {
     setLoading(true);
@@ -83,14 +88,14 @@ const InventoryProvider = ({ children }) => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await response.json();
-      
+
       if (response.ok) {
         setItems(data.items);
       } else {
         setError(data.error || 'Failed to fetch items');
       }
     } catch (err) {
-      setError('Network error. Please ensure the backend server is running.');
+      setError('Network error. Please ensure backend is online.');
     } finally {
       setLoading(false);
     }
@@ -100,21 +105,21 @@ const InventoryProvider = ({ children }) => {
     try {
       const response = await fetch(`${API_URL}/items`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(itemData),
       });
       const data = await response.json();
-      
+
       if (response.ok) {
         setItems([data.item, ...items]);
         return { success: true };
       } else {
-        return { success: false, error: data.error || 'Failed to add item' };
+        return { success: false, error: data.error };
       }
-    } catch (err) {
+    } catch {
       return { success: false, error: 'Network error' };
     }
   };
@@ -123,21 +128,21 @@ const InventoryProvider = ({ children }) => {
     try {
       const response = await fetch(`${API_URL}/items/${id}`, {
         method: 'PUT',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(itemData),
       });
       const data = await response.json();
-      
+
       if (response.ok) {
         setItems(items.map(item => item._id === id ? data.item : item));
         return { success: true };
       } else {
-        return { success: false, error: data.error || 'Failed to update item' };
+        return { success: false, error: data.error };
       }
-    } catch (err) {
+    } catch {
       return { success: false, error: 'Network error' };
     }
   };
@@ -148,15 +153,15 @@ const InventoryProvider = ({ children }) => {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      
+
       if (response.ok) {
         setItems(items.filter(item => item._id !== id));
         return { success: true };
       } else {
         const data = await response.json();
-        return { success: false, error: data.error || 'Failed to delete item' };
+        return { success: false, error: data.error };
       }
-    } catch (err) {
+    } catch {
       return { success: false, error: 'Network error' };
     }
   };
@@ -195,7 +200,7 @@ const AuthPage = () => {
     if (!isLogin && !formData.username.trim()) newErrors.username = 'Username is required';
     if (!formData.email.trim()) newErrors.email = 'Email is required';
     if (!formData.password) newErrors.password = 'Password is required';
-    if (!isLogin && formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+    if (!isLogin && formData.password.length < 6) newErrors.password = 'Password too short';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -203,15 +208,15 @@ const AuthPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
     setLoading(true);
-    const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
-    const body = isLogin 
+
+    const endpoint = isLogin ? '/auth/login' : '/auth/signup';
+    const body = isLogin
       ? { email: formData.email, password: formData.password }
       : formData;
 
     try {
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      const response = await fetch(`${API_BASE}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -223,8 +228,8 @@ const AuthPage = () => {
       } else {
         setErrors({ submit: data.error || 'Authentication failed' });
       }
-    } catch (error) {
-      setErrors({ submit: 'Network error. Please try again.' });
+    } catch {
+      setErrors({ submit: 'Network error. Try again.' });
     } finally {
       setLoading(false);
     }
@@ -233,7 +238,8 @@ const AuthPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Logo/Header */}
+
+        {/* Heading */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mb-4 shadow-lg">
             <Package size={32} className="text-white" />
@@ -242,15 +248,13 @@ const AuthPage = () => {
           <p className="text-gray-600">Manage your inventory with ease</p>
         </div>
 
-        {/* Auth Card */}
+        {/* Auth Box */}
         <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
           <div className="flex gap-2 mb-6">
             <button
               onClick={() => setIsLogin(true)}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition ${
-                isLogin
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                isLogin ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               Sign In
@@ -258,9 +262,7 @@ const AuthPage = () => {
             <button
               onClick={() => setIsLogin(false)}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition ${
-                !isLogin
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                !isLogin ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
               Sign Up
@@ -274,99 +276,49 @@ const AuthPage = () => {
             </div>
           )}
 
-          <div onSubmit={handleSubmit}>
+          {/* Form */}
+          <form onSubmit={handleSubmit}>
             {!isLogin && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Username
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                  <input
-                    type="text"
-                    name="username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
-                      errors.username ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="Choose a username"
-                  />
-                </div>
-                {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
+                <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                <input
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border rounded-lg"
+                />
               </div>
             )}
 
             <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
-                    errors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="you@example.com"
-                />
-              </div>
-              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
+              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border rounded-lg"
+              />
             </div>
 
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className={`w-full pl-10 pr-12 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter your password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
+              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border rounded-lg"
+              />
             </div>
 
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-            >
-              {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
+            <button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg mb-4">
+              {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Account'}
             </button>
-          </div>
-
-          <div className="mt-6 text-center text-sm text-gray-600">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              {isLogin ? 'Sign Up' : 'Sign In'}
-            </button>
-          </div>
+          </form>
         </div>
 
-        <p className="text-center text-sm text-gray-500 mt-6">
-          Secure authentication with JWT tokens
-        </p>
       </div>
     </div>
   );
@@ -402,30 +354,24 @@ const ItemForm = ({ editingItem, onClose, onSuccess }) => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.itemName.trim()) newErrors.itemName = 'Item name is required';
-    if (formData.quantity === '' || formData.quantity < 0) newErrors.quantity = 'Valid quantity required';
-    if (formData.price === '' || formData.price < 0) newErrors.price = 'Valid price required';
+    if (!formData.itemName.trim()) newErrors.itemName = 'Item name required';
+    if (formData.quantity === '' || formData.quantity < 0) newErrors.quantity = 'Enter quantity';
+    if (formData.price === '' || formData.price < 0) newErrors.price = 'Enter price';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
   const handleSubmit = async () => {
     if (!validateForm()) return;
     setSubmitting(true);
-    
+
     const itemData = {
       ...formData,
       quantity: Number(formData.quantity),
       price: Number(formData.price),
     };
 
-    const result = editingItem 
+    const result = editingItem
       ? await updateItem(editingItem._id, itemData)
       : await addItem(itemData);
 
@@ -440,118 +386,52 @@ const ItemForm = ({ editingItem, onClose, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-blue-50 to-purple-50">
-          <h2 className="text-2xl font-bold text-gray-800">
-            {editingItem ? 'Edit Item' : 'Add New Item'}
-          </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 transition">
-            <X size={24} />
-          </button>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md">
+        <h2 className="text-xl font-bold mb-4">
+          {editingItem ? 'Edit Item' : 'Add New Item'}
+        </h2>
+
+        {errors.submit && (
+          <div className="bg-red-50 p-3 rounded text-red-700 mb-3">
+            {errors.submit}
+          </div>
+        )}
+
+        <div className="space-y-3">
+          <input className="border p-3 w-full rounded"
+            name="itemName" value={formData.itemName} placeholder="Item Name"
+            onChange={(e) => setFormData({ ...formData, itemName: e.target.value })} />
+
+          <input className="border p-3 w-full rounded" type="number"
+            name="quantity" value={formData.quantity} placeholder="Quantity"
+            onChange={(e) => setFormData({ ...formData, quantity: e.target.value })} />
+
+          <input className="border p-3 w-full rounded" type="number"
+            name="price" value={formData.price} placeholder="Price"
+            onChange={(e) => setFormData({ ...formData, price: e.target.value })} />
+
+          <textarea className="border p-3 w-full rounded"
+            name="description" placeholder="Description (optional)"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+
+          <select className="border p-3 w-full rounded"
+            name="category" value={formData.category}
+            onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
+            {categories.map(c => <option key={c}>{c}</option>)}
+          </select>
         </div>
 
-        <div className="p-6 space-y-4">
-          {errors.submit && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-              <AlertCircle size={20} />
-              <span>{errors.submit}</span>
-            </div>
-          )}
+        <div className="flex gap-3 mt-4">
+          <button onClick={onClose} className="flex-1 border p-3 rounded">
+            Cancel
+          </button>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Item Name *</label>
-            <input
-              type="text"
-              name="itemName"
-              value={formData.itemName}
-              onChange={handleChange}
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
-                errors.itemName ? 'border-red-500' : 'border-gray-300'
-              }`}
-              placeholder="Enter item name"
-            />
-            {errors.itemName && <p className="text-red-500 text-sm mt-1">{errors.itemName}</p>}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Quantity *</label>
-              <input
-                type="number"
-                name="quantity"
-                value={formData.quantity}
-                onChange={handleChange}
-                min="0"
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
-                  errors.quantity ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="0"
-              />
-              {errors.quantity && <p className="text-red-500 text-sm mt-1">{errors.quantity}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Price ($) *</label>
-              <input
-                type="number"
-                name="price"
-                value={formData.price}
-                onChange={handleChange}
-                min="0"
-                step="0.01"
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none ${
-                  errors.price ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="0.00"
-              />
-              {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
-            <select
-              name="category"
-              value={formData.category}
-              onChange={handleChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-            >
-              {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows="3"
-              maxLength="500"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
-              placeholder="Optional description"
-            />
-            <p className="text-gray-500 text-sm mt-1">{formData.description.length}/500</p>
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <button
-              onClick={onClose}
-              className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition disabled:opacity-50 font-medium shadow-lg"
-            >
-              {submitting ? 'Saving...' : (editingItem ? 'Update' : 'Add Item')}
-            </button>
-          </div>
+          <button onClick={handleSubmit}
+            className="flex-1 bg-blue-600 text-white p-3 rounded">
+            {submitting ? 'Saving...' : editingItem ? 'Update' : 'Add Item'}
+          </button>
         </div>
       </div>
     </div>
@@ -559,71 +439,26 @@ const ItemForm = ({ editingItem, onClose, onSuccess }) => {
 };
 
 const ItemCard = ({ item, onEdit, onDelete }) => {
-  const [deleting, setDeleting] = useState(false);
-
-  const handleDelete = async () => {
-    if (window.confirm(`Delete "${item.itemName}"?`)) {
-      setDeleting(true);
-      await onDelete(item._id);
-      setDeleting(false);
-    }
-  };
-
-  const getCategoryColor = (category) => {
-    const colors = {
-      Electronics: 'from-blue-500 to-blue-600',
-      Clothing: 'from-purple-500 to-purple-600',
-      Food: 'from-green-500 to-green-600',
-      Furniture: 'from-yellow-500 to-yellow-600',
-      Tools: 'from-red-500 to-red-600',
-      Other: 'from-gray-500 to-gray-600',
-    };
-    return colors[category] || colors.Other;
-  };
-
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-      <div className="flex justify-between items-start mb-3">
-        <div className="flex-1">
-          <h3 className="text-lg font-bold text-gray-800 mb-2">{item.itemName}</h3>
-          <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold text-white bg-gradient-to-r ${getCategoryColor(item.category)} shadow-md`}>
-            {item.category}
-          </span>
-        </div>
+    <div className="bg-white border rounded-xl p-4 shadow">
+      <div className="flex justify-between items-start mb-2">
+        <h3 className="font-bold text-lg">{item.itemName}</h3>
         <div className="flex gap-2">
-          <button
-            onClick={() => onEdit(item)}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-          >
+          <button onClick={() => onEdit(item)} className="text-blue-600">
             <Edit size={18} />
           </button>
-          <button
-            onClick={handleDelete}
-            disabled={deleting}
-            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition disabled:opacity-50"
-          >
+          <button onClick={() => onDelete(item._id)} className="text-red-600">
             <Trash2 size={18} />
           </button>
         </div>
       </div>
 
-      <div className="space-y-2 bg-gray-50 rounded-lg p-3">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600 font-medium">Quantity:</span>
-          <span className="font-bold text-gray-800">{item.quantity}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-600 font-medium">Price:</span>
-          <span className="font-bold text-gray-800">${item.price.toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between text-sm pt-2 border-t border-gray-200">
-          <span className="text-gray-600 font-medium">Total Value:</span>
-          <span className="font-bold text-blue-600">${(item.price * item.quantity).toFixed(2)}</span>
-        </div>
-      </div>
+      <p className="text-sm text-gray-600">Category: {item.category}</p>
+      <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+      <p className="text-sm text-gray-600">Price: ${item.price}</p>
 
       {item.description && (
-        <p className="text-sm text-gray-600 mt-3 line-clamp-2">{item.description}</p>
+        <p className="text-xs text-gray-500 mt-2">{item.description}</p>
       )}
     </div>
   );
@@ -635,185 +470,80 @@ const InventoryApp = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
 
   useEffect(() => {
     fetchItems();
   }, []);
 
-  const handleEdit = (item) => {
-    setEditingItem(item);
-    setShowForm(true);
-  };
-
-  const filteredItems = items.filter(item => {
-    const matchesSearch = item.itemName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = !selectedCategory || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const categories = ['All', 'Electronics', 'Clothing', 'Food', 'Furniture', 'Tools', 'Other'];
-  const stats = {
-    totalItems: filteredItems.length,
-    totalQuantity: filteredItems.reduce((sum, item) => sum + item.quantity, 0),
-    totalValue: filteredItems.reduce((sum, item) => sum + (item.price * item.quantity), 0)
-  };
+  const filtered = items.filter(i =>
+    i.itemName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <div className="bg-white shadow-md border-b sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Package size={24} className="text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">Inventory Manager</h1>
-                <p className="text-sm text-gray-600">Welcome, {user?.username}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setShowForm(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition shadow-lg font-medium"
-              >
-                <Plus size={20} />
-                Add Item
-              </button>
-              <button
-                onClick={logout}
-                className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition font-medium"
-              >
-                <LogOut size={20} />
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50">
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 mb-1">Total Items</p>
-                <p className="text-4xl font-bold">{stats.totalItems}</p>
-              </div>
-              <Package size={48} className="opacity-50" />
-            </div>
-          </div>
-          
-          <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white shadow-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-100 mb-1">Total Quantity</p>
-                <p className="text-4xl font-bold">{stats.totalQuantity}</p>
-              </div>
-              <TrendingUp size={48} className="opacity-50" />
-            </div>
-          </div>
-          
-          <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white shadow-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-100 mb-1">Total Value</p>
-                <p className="text-4xl font-bold">${stats.totalValue.toFixed(2)}</p>
-              </div>
-              <CheckCircle size={48} className="opacity-50" />
-            </div>
-          </div>
+      {/* HEADER */}
+      <header className="bg-white shadow sticky top-0 z-10 p-4 flex justify-between">
+        <h1 className="text-xl font-bold">Inventory Manager</h1>
+        <div className="flex items-center gap-4">
+          <span>Hello, {user.username}</span>
+          <button onClick={logout} className="border px-3 py-1 rounded">
+            Logout
+          </button>
+        </div>
+      </header>
+
+      {/* SEARCH */}
+      <div className="max-w-4xl mx-auto p-4">
+        <div className="flex justify-between mb-4">
+          <input
+            type="text"
+            placeholder="Search items..."
+            className="border p-3 w-full max-w-sm rounded"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+
+          <button
+            onClick={() => { setEditingItem(null); setShowForm(true); }}
+            className="ml-4 bg-blue-600 text-white px-4 py-3 rounded"
+          >
+            + Add Item
+          </button>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Search items..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-2">
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat === 'All' ? '' : cat)}
-                  className={`px-4 py-3 rounded-xl whitespace-nowrap transition font-medium ${
-                    (cat === 'All' && !selectedCategory) || selectedCategory === cat
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Error */}
+        {/* ERROR */}
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 flex items-center gap-2">
-            <AlertCircle size={20} />
-            <span>{error}</span>
+          <div className="bg-red-50 p-3 rounded text-red-700 mb-4">
+            {error}
           </div>
         )}
 
-        {/* Loading */}
-        {loading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
-            <p className="mt-4 text-gray-600">Loading items...</p>
+        {/* LISTING */}
+        {loading ? (
+          <p>Loading...</p>
+        ) : filtered.length === 0 ? (
+          <p className="text-center text-gray-600">No items found.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filtered.map(item => (
+              <ItemCard
+                key={item._id}
+                item={item}
+                onEdit={(it) => { setEditingItem(it); setShowForm(true); }}
+                onDelete={deleteItem}
+              />
+            ))}
           </div>
-        )}
-
-        {/* Items Grid */}
-        {!loading && (
-          <>
-            {filteredItems.length === 0 ? (
-              <div className="text-center py-16 bg-white rounded-2xl border border-gray-200">
-                <Package size={64} className="mx-auto text-gray-400 mb-4" />
-                <p className="text-gray-600 text-xl mb-2 font-semibold">No items found</p>
-                <p className="text-gray-500">
-                  {searchTerm || selectedCategory 
-                    ? 'Try adjusting your filters'
-                    : 'Click "Add Item" to create your first inventory item'}
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredItems.map(item => (
-                  <ItemCard
-                    key={item._id}
-                    item={item}
-                    onEdit={handleEdit}
-                    onDelete={deleteItem}
-                  />
-                ))}
-              </div>
-            )}
-          </>
         )}
       </div>
 
-      {/* Modal */}
+      {/* FORM MODAL */}
       {showForm && (
         <ItemForm
           editingItem={editingItem}
-          onClose={() => {
-            setShowForm(false);
-            setEditingItem(null);
-          }}
-          onSuccess={() => fetchItems(selectedCategory)}
+          onClose={() => { setShowForm(false); setEditingItem(null); }}
+          onSuccess={() => fetchItems()}
         />
       )}
     </div>
@@ -835,11 +565,8 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-blue-600 border-t-transparent mb-4"></div>
-          <p className="text-gray-600 text-lg">Loading...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
       </div>
     );
   }
