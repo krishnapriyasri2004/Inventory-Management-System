@@ -72,7 +72,8 @@ const InventoryProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const { token } = useAuth();
 
-  const API_URL = 'http://localhost:5000/api';
+  const API_URL = 'https://inventory-management-system-lers.onrender.com/api';
+
 
   const fetchItems = async (category = '') => {
     setLoading(true);
@@ -211,7 +212,8 @@ const AuthPage = () => {
       : formData;
 
     try {
-      const response = await fetch(`http://localhost:5000${endpoint}`, {
+      const response = await fetch('https://inventory-management-system-lers.onrender.com/api/auth/me', {
+
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
