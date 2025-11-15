@@ -419,14 +419,15 @@ It demonstrates strong skills in:
 * Debugging & problem-solving
 
 
+## 📸 Screenshots
 
-### 🔐 Authentication Screen
-![Authentication](frontend/screenshots/auth.png)
+### 🔐 Authentication Page
+![Auth](frontend/screenshots/auth.png)
 
-### 🖥️ Dashboard Overview
+### 🖥️ Dashboard
 ![Dashboard](frontend/screenshots/dashboard.png)
 
-### 🗄️ Database Storage View
-![Database Storage](frontend/screenshots/dbstorage.png)
+### 🗄️ MongoDB Storage
+![DB Storage](frontend/screenshots/dbstorage.png)
 
 
