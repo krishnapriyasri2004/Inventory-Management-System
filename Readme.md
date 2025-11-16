@@ -511,6 +511,11 @@ It demonstrates strong skills in:
 ### 🖥️ Dashboard
 ![Dashboard](frontend/screenshots/dashboard.png)
 
+## 📸 CRUD Operation Screenshot
+
+![CRUD Screenshot](frontend/screenshots/crud.png)
+
+
 ### 🗄️ MongoDB Storage
 ![DB Storage](frontend/screenshots/dbstorage.png)
 
