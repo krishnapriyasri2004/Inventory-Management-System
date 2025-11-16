@@ -186,7 +186,7 @@ React Frontend → Express.js REST API → MongoDB Database
 
 
 
-# **7. Backend API Summary (Short)**
+# **7. Backend API Summary**
 
 | Method | Route            | Function             |
 | ------ | ---------------- | -------------------- |
