@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Inventory Management System - Backend
 
 ## Overview
@@ -514,4 +514,3 @@ It demonstrates strong skills in:
 ### 🗄️ MongoDB Storage
 ![DB Storage](frontend/screenshots/dbstorage.png)
 
->>>>>>> 33a39dbb40a491ebeeaff49ab6dd8e32276feaa4
